@@ -10,7 +10,7 @@ import org.apache.camel.Processor;
  * Time: 2:04 PM
  *
  */
-public class JsonInjector implements Processor {
+public class Decrypter implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
         exchange.getIn().setBody("{\"movielist\":\"raiders\"}");

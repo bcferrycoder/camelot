@@ -16,7 +16,6 @@
     limitations under the License.
 -->
 
-<!-- START SNIPPET: e1 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:camel="http://camel.apache.org/schema/spring"
@@ -25,49 +24,83 @@
          http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
 
-    <bean class="com.bcferrycoder.camelot.JsonInjector" id="injector" />
+    <bean class="com.bcferrycoder.camelot.JsonInjector" id="injector"/>
+    <bean class="com.bcferrycoder.camelot.RainInjector" id="raininjector"/>
+    <bean class="com.bcferrycoder.camelot.BillsboardInjector" id="billsboardinjector"/>
+    <bean class="com.bcferrycoder.camelot.PollvaultInjector" id="pollvaultinjector"/>
+    <bean class="com.bcferrycoder.camelot.Decrypter" id="decrypter"/>
+    <bean class="com.bcferrycoder.camelot.Encrypter" id="encrypter"/>
+    <bean class="com.bcferrycoder.camelot.Validator" id="validator"/>
+    <bean class="com.bcferrycoder.camelot.Guido" id="guido"/>
 
     <bean id="camelotDb" class="com.mongodb.Mongo">
-        <constructor-arg index="0" value="192.168.1.122:27017"/>
+        <constructor-arg index="0" value="192.168.1.108:27017"/>
     </bean>
 
 
     <camelContext xmlns="http://camel.apache.org/schema/spring">
 
-    <route>
-      <!-- incoming requests from the servlet is routed -->
-      <from uri="servlet:///hello"/>
-        <wireTap uri="direct:tap"/>
-      <choice>
-        <when>
-          <!-- is there a header with the key name? -->
-          <header>name</header>
-          <!-- yes so return back a message to the user -->
-          <transform>
-            <simple>Hello ${header.name} how are you?</simple>
-          </transform>
-        </when>
-        <otherwise>
-          <!-- if no name parameter then output a syntax to the user -->
-          <transform>
-            <constant>Add a name parameter to uri, eg ?name=foo</constant>
-          </transform>
-        </otherwise>
-      </choice>
-    </route>
-
-      <route>
-          <from uri="direct:tap"/>
-          <bean ref="injector" />
-          <to uri="mongodb:camelotDb?database=camelot&amp;collection=humps&amp;operation=insert"/>
-      </route>
-
         <route>
-            <from uri="servlet:///bye" />
-            <to uri="mongodb:camelotDb?database=camelot&amp;collection=humps&amp;operation=findAll"/>
+            <!-- add route id -->
+            <from uri="servlet:///camelot"/>
+            <wireTap uri="direct:tap"/>
         </route>
 
-  </camelContext>
+        <route>
+            <from uri="direct:tap"/>
+            <bean ref="validator"/>
+            <bean ref="guido"/>
+            <choice>
+                <when>
+                    <simple>${header.camelot} == 'raingauge'</simple>
+                    <to uri="seda:activemq:topic:raingauge"/>
+                </when>
+                <when>
+                    <simple>${header.camelot} == 'billsboard'</simple>
+                    <to uri="seda:activemq:topic:billsboard"/>
+                </when>
+                <when>
+                    <simple>${header.camelot} == 'pollvault'</simple>
+                    <to uri="seda:activemq:topic:pollvault"/>
+                </when>
+                <when>
+                    <simple>${header.camelot} == 'unknown'</simple>
+                    <to uri="seda:activemq:topic:unknown"/>
+                </when>
+            </choice>
+        </route>
+
+        <route>
+            <from uri="seda:activemq:topic:raingauge"/>
+            <bean ref="raininjector"/>
+            <to uri="mongodb:camelotDb?database=camelot&amp;collection=raingauge&amp;operation=insert"/>
+        </route>
+
+        <route>
+            <from uri="seda:activemq:topic:billsboard"/>
+            <bean ref="billsboardinjector"/>
+            <to uri="mongodb:camelotDb?database=camelot&amp;collection=billsboard&amp;operation=insert"/>
+        </route>
+
+        <route>
+            <from uri="seda:activemq:topic:pollvault"/>
+            <bean ref="pollvaultinjector"/>
+            <to uri="mongodb:camelotDb?database=camelot&amp;collection=pollvault&amp;operation=insert"/>
+        </route>
+
+        <route>
+            <from uri="seda:activemq:topic:unknown"/>
+            <transform>
+                <constant>${header.camelot} UNKNOWN APP SELECTOR</constant>
+            </transform>
+            <to uri="log:com.bcferrycoder.camelot?level=WARN"/>
+        </route>
+
+        <route>
+            <from uri="servlet:///bye"/>
+            <to uri="mongodb:camelotDb?database=camelot&amp;collection=billsboard&amp;operation=findAll"/>
+        </route>
+
+    </camelContext>
 
 </beans>
-  <!-- END SNIPPET: e1 -->

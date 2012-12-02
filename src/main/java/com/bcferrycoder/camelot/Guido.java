@@ -3,6 +3,8 @@ package com.bcferrycoder.camelot;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
+import java.util.UUID;
+
 /**
  * Created with IntelliJ IDEA.
  * User: stackato
@@ -10,10 +12,9 @@ import org.apache.camel.Processor;
  * Time: 2:04 PM
  *
  */
-public class JsonInjector implements Processor {
+public class Guido implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
-        exchange.getIn().setBody("{\"movielist\":\"raiders\"}");
-        exchange.getOut().setBody("{\"movielist\":\"raiders\"}");
+        exchange.getIn().setHeader("id", UUID.randomUUID());
     }
 }
