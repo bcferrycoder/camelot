@@ -13,11 +13,14 @@ import org.apache.camel.Processor;
 public class Validator implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
+        System.out.println("Validator start: " + Stopwatch.elapsedTime(exchange));
+
         String appSelector = (String) exchange.getIn().getHeader("camelot");
         if (appSelector != null) {
             System.out.println("app:" + appSelector);
         } else {
             exchange.getIn().setHeader("camelot", "unknown");
         }
+        System.out.println("Validator end: " + Stopwatch.elapsedTime(exchange));
     }
 }

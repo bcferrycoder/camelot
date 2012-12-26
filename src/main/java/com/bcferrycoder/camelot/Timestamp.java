@@ -3,6 +3,7 @@ package com.bcferrycoder.camelot;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -12,11 +13,10 @@ import java.util.UUID;
  * Time: 2:04 PM
  *
  */
-public class Guido implements Processor {
+public class Timestamp implements Processor {
+
     @Override
     public void process(Exchange exchange) throws Exception {
-        exchange.getIn().setHeader("id", UUID.randomUUID());
-        Thread.sleep(1100);
-        System.out.println("Guido end:   " + Stopwatch.elapsedTime(exchange));
+        exchange.getIn().setHeader("launchtime", "" + System.nanoTime() / 1000);
     }
 }

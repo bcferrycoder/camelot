@@ -25,25 +25,37 @@
 
 
     <bean class="com.bcferrycoder.camelot.JsonInjector" id="injector"/>
-    <bean class="com.bcferrycoder.camelot.RainInjector" id="raininjector"/>
+    <bean class="com.bcferrycoder.camelot.RainToJson" id="raininjector"/>
     <bean class="com.bcferrycoder.camelot.BillsboardInjector" id="billsboardinjector"/>
     <bean class="com.bcferrycoder.camelot.PollvaultInjector" id="pollvaultinjector"/>
     <bean class="com.bcferrycoder.camelot.Decrypter" id="decrypter"/>
     <bean class="com.bcferrycoder.camelot.Encrypter" id="encrypter"/>
     <bean class="com.bcferrycoder.camelot.Validator" id="validator"/>
     <bean class="com.bcferrycoder.camelot.Guido" id="guido"/>
+    <bean class="com.bcferrycoder.camelot.Timestamp" id="timestamp"/>
+    <bean class="com.bcferrycoder.camelot.ShowEnv" id="showenv"/>
+
+
+    <bean id="mongoUri" class="com.mongodb.MongoURI">
+
+<!--        <constructor-arg index="0" value="mongodb://da3981ab-b3d8-449c-b597-31b089bc31f4:09e9b521-9d77-42ca-b59e-af9aec447ee8@10.17.122.215:25001/db"/> -->
+        <constructor-arg index="0" value="MONGODB_URL"/>
+<!--        <constructor-arg index="0" value="mongodb://localhost:27017"/> -->
+    </bean>
 
     <bean id="camelotDb" class="com.mongodb.Mongo">
-        <constructor-arg index="0" value="192.168.1.108:27017"/>
+        <constructor-arg index="0" ref="mongoUri" />
     </bean>
 
 
-    <camelContext xmlns="http://camel.apache.org/schema/spring">
+    <camelContext trace="true" xmlns="http://camel.apache.org/schema/spring">
 
         <route>
             <!-- add route id -->
             <from uri="servlet:///camelot"/>
+            <bean ref="timestamp"/>
             <wireTap uri="direct:tap"/>
+            <setBody><constant>&lt;a href="http://localhost:8080/camel/camelot?camelot=raingauge&amp;x=13&amp;y=132.245&amp;rainfall=42"&gt;RAINFALL&lt;/a&gt;</constant></setBody>
         </route>
 
         <route>
@@ -73,19 +85,19 @@
         <route>
             <from uri="seda:activemq:topic:raingauge"/>
             <bean ref="raininjector"/>
-            <to uri="mongodb:camelotDb?database=camelot&amp;collection=raingauge&amp;operation=insert"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=raingauge&amp;operation=insert"/>
         </route>
 
         <route>
             <from uri="seda:activemq:topic:billsboard"/>
             <bean ref="billsboardinjector"/>
-            <to uri="mongodb:camelotDb?database=camelot&amp;collection=billsboard&amp;operation=insert"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=billsboard&amp;operation=insert"/>
         </route>
 
         <route>
             <from uri="seda:activemq:topic:pollvault"/>
             <bean ref="pollvaultinjector"/>
-            <to uri="mongodb:camelotDb?database=camelot&amp;collection=pollvault&amp;operation=insert"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=pollvault&amp;operation=insert"/>
         </route>
 
         <route>
@@ -97,9 +109,25 @@
         </route>
 
         <route>
-            <from uri="servlet:///bye"/>
-            <to uri="mongodb:camelotDb?database=camelot&amp;collection=billsboard&amp;operation=findAll"/>
+            <from uri="servlet:///findbillsboard"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=billsboard&amp;operation=findAll"/>
         </route>
+
+        <route>
+            <from uri="servlet:///showenv"/>
+            <bean ref="showenv"/>
+        </route>
+
+        <route>
+            <from uri="servlet:///showrain"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=raingauge&amp;operation=findAll"/>
+        </route>
+
+        <route>
+            <from uri="servlet:///showstats"/>
+            <to uri="mongodb:camelotDb?database=db&amp;collection=raingauge&amp;operation=getDbStats"/>
+        </route>
+
 
     </camelContext>
 

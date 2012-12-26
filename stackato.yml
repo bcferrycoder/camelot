@@ -1,4 +1,9 @@
 name: camelot
-framework: java_web
-mem: 2048M
-
+framework: 
+    type: java_web
+    runtime: java7
+mem: 1088M
+services:
+    ${name}-db: mongodb
+hooks:
+     pre-running: ruby -p -i -e '$_.gsub!(/MONGODB_URL/,''"'$MONGODB_URL'")' WEB-INF/classes/camel-config.xml
